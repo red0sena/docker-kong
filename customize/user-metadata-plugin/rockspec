@@ -1,0 +1,21 @@
+package = "kong-plugin-user-metadata"
+version = "1.0.0-1"
+source = {
+  url = "git://github.com/kong/kong-plugin-user-metadata.git"
+}
+description = {
+  summary = "Kong plugin for user metadata management",
+  detailed = "A Kong plugin that adds user metadata (TDL matrix and capabilities) to requests",
+  homepage = "https://github.com/kong/kong-plugin-user-metadata",
+  license = "Apache-2.0"
+}
+dependencies = {
+  "kong >= 1.0.0"
+}
+build = {
+  type = "builtin",
+  modules = {
+    ["kong.plugins.user-metadata.handler"] = "handler.lua",
+    ["kong.plugins.user-metadata.schema"] = "schema.lua"
+  }
+}

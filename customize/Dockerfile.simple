@@ -1,0 +1,15 @@
+ARG KONG_BASE=kong:latest
+
+FROM ${KONG_BASE}
+
+USER root
+
+# Copy the custom plugin
+COPY user-metadata-plugin /usr/local/share/lua/5.1/kong/plugins/user-metadata
+
+# Set permissions
+RUN chown -R kong:kong /usr/local/share/lua/5.1/kong/plugins/user-metadata
+
+HEALTHCHECK --interval=60s --timeout=10s --retries=10 CMD kong-health
+
+USER kong

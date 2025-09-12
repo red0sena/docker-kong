@@ -1,0 +1,27 @@
+ARG KONG_BASE=kong:latest
+
+FROM ${KONG_BASE} AS build
+
+ARG KONG_LICENSE_DATA
+ENV KONG_LICENSE_DATA=${KONG_LICENSE_DATA}
+
+# Copy the custom plugin
+COPY user-metadata-plugin /usr/local/share/lua/5.1/kong/plugins/user-metadata
+
+USER root
+
+# Install the plugin
+RUN cd /usr/local/share/lua/5.1/kong/plugins/user-metadata && \
+    luarocks make rockspec
+
+FROM ${KONG_BASE}
+
+USER root
+
+# Copy the installed plugin
+COPY --from=build /usr/local/share/lua/5.1/kong/plugins/user-metadata /usr/local/share/lua/5.1/kong/plugins/user-metadata
+COPY --from=build /usr/local/lib/luarocks/rocks-5.1/kong-plugin-user-metadata /usr/local/lib/luarocks/rocks-5.1/kong-plugin-user-metadata
+
+HEALTHCHECK --interval=60s --timeout=10s --retries=10 CMD kong-health
+
+USER kong
