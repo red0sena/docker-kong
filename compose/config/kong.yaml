@@ -1,3 +1,239 @@
-# a very minimal declarative config file
-_format_version: "2.1"
-_transform: true
+_format_version: "3.0"
+
+vaults:
+  - name: env
+    prefix: myenv
+    config:
+      prefix: "KONG_VAULT_"
+
+plugins:
+  - name: file-log
+    config:
+      path: /tmp/kong-access.log
+      reopen: true
+
+consumers:
+  - username: "user1-client"
+    custom_id: "client-001"
+    tags: ["user1-access"]
+    keyauth_credentials:
+      - key: "user1-secret-key-12345"
+    acls:
+      - group: "midm-allowed"
+    plugins:
+      - name: user-metadata
+        config:
+          metadata_list:
+            - id: "kt-midm-base"
+              provider_name: "kt"
+              tags: ["kt", "믿음"]
+              tdl_matrix:
+                T1: [0, 0, 0, 0, 0, 3, 0, 0, 0, 0]
+                T2: [0, 0, 0, 0, 0, 3, 0, 0, 0, 0]
+                T3: [0, 0, 0, 0, 0, 3, 0, 0, 0, 0]
+                T4: [0, 0, 0, 0, 0, 3, 0, 0, 0, 0]
+                T5: [0, 0, 0, 0, 0, 3, 0, 0, 0, 0]
+                T6: [0, 0, 0, 0, 0, 3, 0, 0, 0, 0]
+                T7: [0, 0, 0, 0, 0, 3, 0, 0, 0, 0]
+                T8: [0, 0, 0, 0, 0, 3, 0, 0, 0, 0]
+                T9: [0, 0, 0, 0, 0, 3, 0, 0, 0, 0]
+                T10: [0, 0, 0, 0, 0, 3, 0, 0, 0, 0]
+                T11: [0, 0, 0, 0, 0, 3, 0, 0, 0, 0]
+                T12: [0, 0, 0, 0, 0, 3, 0, 0, 0, 0]
+              capabilities: [1, 1, 0, 0, 0]
+              max_input_tokens: 50000
+              max_output_tokens: 20000
+              input_cost_per_token: 0.00000005
+              output_cost_per_token: 0.0000002
+
+  - username: "admin-client"
+    custom_id: "client-002"
+    tags: ["admin-access"]
+    keyauth_credentials:
+      - key: "admin-secret-key-67890"
+    acls:
+      - group: "openai-allowed"
+      - group: "midm-allowed"
+    plugins:
+      - name: user-metadata
+        config:
+          metadata_list:
+            - id: "kt-midm-base"
+              provider_name: "kt"
+              tags: ["kt", "믿음"]
+              tdl_matrix:
+                T1: [0, 0, 0, 0, 0, 3, 0, 0, 0, 0]
+                T2: [0, 0, 0, 0, 0, 3, 0, 0, 0, 0]
+                T3: [0, 0, 0, 0, 0, 3, 0, 0, 0, 0]
+                T4: [0, 0, 0, 0, 0, 3, 0, 0, 0, 0]
+                T5: [0, 0, 0, 0, 0, 3, 0, 0, 0, 0]
+                T6: [0, 0, 0, 0, 0, 3, 0, 0, 0, 0]
+                T7: [0, 0, 0, 0, 0, 3, 0, 0, 0, 0]
+                T8: [0, 0, 0, 0, 0, 3, 0, 0, 0, 0]
+                T9: [0, 0, 0, 0, 0, 3, 0, 0, 0, 0]
+                T10: [0, 0, 0, 0, 0, 3, 0, 0, 0, 0]
+                T11: [0, 0, 0, 0, 0, 3, 0, 0, 0, 0]
+                T12: [0, 0, 0, 0, 0, 3, 0, 0, 0, 0]
+              capabilities: [1, 1, 0, 0, 0]
+              max_input_tokens: 50000
+              max_output_tokens: 20000
+              input_cost_per_token: 0.00000005
+              output_cost_per_token: 0.0000002
+            
+            - id: "azure-gpt4o"
+              provider_name: "azure"
+              tags: ["azure", "GPT4o"]
+              tdl_matrix:
+                T1: [3,3,3,3,3,3,3,3,3,3]
+                T2: [3,3,3,3,3,3,3,3,3,3]
+                T3: [3,3,3,3,3,3,3,3,3,3]
+                T4: [3,3,3,3,3,3,3,3,3,3]
+                T5: [3,3,3,3,3,3,3,3,3,3]
+                T6: [3,3,3,3,3,3,3,3,3,3]
+                T7: [3,3,3,3,3,3,3,3,3,3]
+                T8: [3,3,3,3,3,3,3,3,3,3]
+                T9: [3,3,3,3,3,3,3,3,3,3]
+                T10: [3,3,3,3,3,3,3,3,3,3]
+                T11: [3,3,3,3,3,3,3,3,3,3]
+                T12: [3,3,3,3,3,3,3,3,3,3]
+              capabilities: [1, 1, 1, 1, 1]
+              max_input_tokens: 100000
+              max_output_tokens: 40000
+              input_cost_per_token: 0.00000003
+              output_cost_per_token: 0.00000006
+
+services:
+  - name: user-metadata-service
+    url: http://httpbin.org/status/200
+    connect_timeout: 5000
+    read_timeout: 5000
+    write_timeout: 5000
+    retries: 1
+
+  - name: llama2-api
+    url: http://host.docker.internal:11434
+    connect_timeout: 60000
+    read_timeout: 60000
+    write_timeout: 60000
+    retries: 5
+
+  - name: openai-api
+    url: https://api.openai.com/v1
+    connect_timeout: 60000
+    read_timeout: 60000
+    write_timeout: 60000
+    retries: 5
+
+routes:
+  - name: user-metadata-api
+    service: user-metadata-service
+    paths:
+      - /api/user-metadata
+      - /api/tdl-matrix
+    methods:
+      - GET
+      - POST
+      - OPTIONS
+    protocols:
+      - http
+      - https
+    strip_path: false
+    preserve_host: false
+    path_handling: v0
+    regex_priority: 300
+    https_redirect_status_code: 426
+    request_buffering: true
+    response_buffering: true
+    plugins:
+      - name: key-auth
+        config:
+          key_names: ["apikey"]
+          hide_credentials: true
+
+  - name: llama2-api_llama2-chat
+    service: llama2-api
+    paths:
+      - /midm-base/chat
+    methods:
+      - POST
+    protocols:
+      - http
+      - https
+    strip_path: false
+    preserve_host: false
+    path_handling: v0
+    regex_priority: 200
+    https_redirect_status_code: 426
+    request_buffering: true
+    response_buffering: true
+    plugins:
+      - name: key-auth
+        config:
+          key_names: ["apikey"]
+          hide_credentials: true
+      - name: acl
+        config:
+          allow: ["midm-allowed"]
+      - name: ai-proxy
+        config:
+          route_type: llm/v1/chat
+          response_streaming: allow
+          model_name_header: true
+          llm_format: openai
+          max_request_body_size: 8192
+          model:
+            name: llama2
+            provider: llama2
+            options:
+              llama2_format: ollama
+              upstream_url: http://host.docker.internal:11434/api/chat
+              temperature: 0.7
+              max_tokens: 256
+          logging:
+            log_payloads: false
+            log_statistics: true
+
+  - name: openai-api_gpt4o-chat
+    service: openai-api
+    paths:
+      - /gpt4o/chat
+    methods:
+      - POST
+    protocols:
+      - http
+      - https
+    strip_path: false
+    preserve_host: false
+    path_handling: v0
+    regex_priority: 200
+    https_redirect_status_code: 426
+    request_buffering: true
+    response_buffering: true
+    plugins:
+      - name: key-auth
+        config:
+          key_names: ["apikey"]
+          hide_credentials: true
+      - name: acl
+        config:
+          allow: ["openai-allowed"]
+      - name: ai-proxy
+        config:
+          route_type: llm/v1/chat
+          response_streaming: allow
+          model_name_header: true
+          llm_format: openai
+          max_request_body_size: 8192
+          model:
+            name: gpt-4o
+            provider: openai
+            options:
+              temperature: 0.7
+              max_tokens: 256
+          auth:
+            header_name: Authorization
+            header_value: "{vault://myenv/openai-api-key}"
+            allow_override: false
+          logging:
+            log_payloads: false
+            log_statistics: true
