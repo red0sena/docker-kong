@@ -67,6 +67,7 @@ services:
       KONG_PROXY_ERROR_LOG: /dev/stderr
       KONG_PREFIX: ${KONG_PREFIX:-/var/run/kong}
       KONG_DECLARATIVE_CONFIG: "/opt/kong/kong.yaml"
+      KONG_VAULT_OPENAI_API_KEY: "Bearer ${OPENAI_API_KEY?Missing OPENAI_API_KEY}"
     secrets:
       - kong_postgres_password
     networks:

@@ -36,32 +36,158 @@ cd /Users/kyunghwan/Desktop/A-Pattern/docker-kong/customize
 docker build -f Dockerfile.user-metadata -t kong-with-user-metadata .
 ```
 
-### 2. Kong 설정에서 플러그인 활성화
+### 2. Kong 설정에서 플러그인 활성화 (metadata_list)
 
-`compose/config/kong.yaml` 파일에서 플러그인을 Consumer에 추가:
+이제 한 플러그인에서 여러 메타데이터를 배열로 관리합니다. `compose/config/kong.yaml`의 consumer 레벨 설정 예시는 다음과 같습니다:
 
 ```yaml
 consumers:
-  - username: "llama2-client"
+  - username: "user1-client"
     custom_id: "client-001"
+    tags: ["user1-access"]
     keyauth_credentials:
-      - key: "llama2-secret-key-12345"
+      - key: "user1-secret-key-12345"
+    acls:
+      - group: "midm-allowed"
     plugins:
       - name: user-metadata
         config:
-          id: "kt-llama3-1"
-          provider_name: "kt"
-          tags: ["뭘봐임마"]
-          tdl_matrix:
-            T1: [0, 0, 0, 0, 0, 3, 0, 0, 0, 0]
-            T2: [0, 0, 0, 0, 0, 3, 0, 0, 0, 0]
-            T3: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-            # ... T4-T12 설정
-          capabilities: [1, 1, 0, 0, 0]
-          max_input_tokens: 24000
-          max_output_tokens: 8000
-          input_cost_per_token: 0.000000083
-          output_cost_per_token: 0.00000033
+          metadata_list:
+            - id: "kt-midm-base"
+              provider_name: "kt"
+              tags: ["kt", "믿음"]
+              tdl_matrix:
+                T1: [0, 0, 0, 0, 0, 3, 0, 0, 0, 0]
+                T2: [0, 0, 0, 0, 0, 3, 0, 0, 0, 0]
+                T3: [0, 0, 0, 0, 0, 3, 0, 0, 0, 0]
+                T4: [0, 0, 0, 0, 0, 3, 0, 0, 0, 0]
+                T5: [0, 0, 0, 0, 0, 3, 0, 0, 0, 0]
+                T6: [0, 0, 0, 0, 0, 3, 0, 0, 0, 0]
+                T7: [0, 0, 0, 0, 0, 3, 0, 0, 0, 0]
+                T8: [0, 0, 0, 0, 0, 3, 0, 0, 0, 0]
+                T9: [0, 0, 0, 0, 0, 3, 0, 0, 0, 0]
+                T10: [0, 0, 0, 0, 0, 3, 0, 0, 0, 0]
+                T11: [0, 0, 0, 0, 0, 3, 0, 0, 0, 0]
+                T12: [0, 0, 0, 0, 0, 3, 0, 0, 0, 0]
+              capabilities: [1, 1, 0, 0, 0]
+              max_input_tokens: 50000
+              max_output_tokens: 20000
+              input_cost_per_token: 0.00000005
+              output_cost_per_token: 0.0000002
+
+  - username: "admin-client"
+    custom_id: "client-002"
+    tags: ["admin-access"]
+    keyauth_credentials:
+      - key: "admin-secret-key-67890"
+    acls:
+      - group: "openai-allowed"
+      - group: "midm-allowed"
+    plugins:
+      - name: user-metadata
+        config:
+          metadata_list:
+            - id: "kt-midm-base"
+              provider_name: "kt"
+              tags: ["kt", "믿음"]
+              tdl_matrix:
+                T1: [0, 0, 0, 0, 0, 3, 0, 0, 0, 0]
+                # ... T2 ~ T12 (동일한 패턴)
+              capabilities: [1, 1, 0, 0, 0]
+              max_input_tokens: 50000
+              max_output_tokens: 20000
+              input_cost_per_token: 0.00000005
+              output_cost_per_token: 0.0000002
+            - id: "azure-gpt4o"
+              provider_name: "azure"
+              tags: ["azure", "GPT4o"]
+              tdl_matrix:
+                T1: [3,3,3,3,3,3,3,3,3,3]
+                # ... T2 ~ T12 (동일한 패턴)
+              capabilities: [1, 1, 1, 1, 1]
+              max_input_tokens: 100000
+              max_output_tokens: 40000
+              input_cost_per_token: 0.00000003
+              output_cost_per_token: 0.00000006
+```
+
+또한 `/api/user-metadata` 같은 메타데이터 조회 엔드포인트에서 응답을 직접 반환하려면 해당 route에 플러그인을 추가해야 합니다:
+
+```yaml
+routes:
+  - name: user-metadata-api
+    service: user-metadata-service
+    paths:
+      - /api/user-metadata
+      - /api/tdl-matrix
+    methods:
+      - GET
+      - POST
+      - OPTIONS
+    protocols:
+      - http
+      - https
+    plugins:
+      - name: key-auth
+        config:
+          key_names: ["apikey"]
+          hide_credentials: true
+      - name: user-metadata
+        config:
+          metadata_list:
+            - id: "default-metadata"
+              provider_name: "default"
+              tags: ["default"]
+              tdl_matrix:
+                T1: [0, 0, 0, 0, 0, 1, 0, 0, 0, 0]
+                # ... T2 ~ T12 (동일한 패턴)
+              capabilities: [1, 0, 0, 0, 0]
+              max_input_tokens: 1000
+              max_output_tokens: 1000
+              input_cost_per_token: 0.0000001
+              output_cost_per_token: 0.0000001
+
+  - name: llama2-api_llama2-chat
+    service: llama2-api
+    paths:
+      - /midm-base/chat
+    methods:
+      - POST
+    plugins:
+      - name: key-auth
+        config:
+          key_names: ["apikey"]
+          hide_credentials: true
+      - name: acl
+        config:
+          allow: ["midm-allowed"]
+      - name: ai-proxy
+        config:
+          route_type: llm/v1/chat
+          model:
+            name: llama2
+            provider: llama2
+
+  - name: openai-api_gpt4o-chat
+    service: openai-api
+    paths:
+      - /gpt4o/chat
+    methods:
+      - POST
+    plugins:
+      - name: key-auth
+        config:
+          key_names: ["apikey"]
+          hide_credentials: true
+      - name: acl
+        config:
+          allow: ["openai-allowed"]
+      - name: ai-proxy
+        config:
+          route_type: llm/v1/chat
+          model:
+            name: gpt-4o
+            provider: openai
 ```
 
 ### 3. Kong 컨테이너 실행
@@ -76,12 +202,12 @@ docker-compose up -d
 
 ## 📝 사용 방법
 
-### 1. API 호출 예시
+### 1. API 호출 예시 (조회 응답은 배열)
 
 ```bash
-# llama2-client로 API 호출
-curl -X POST http://localhost:8000/llama2/chat \
-  -H "apikey: llama2-secret-key-12345" \
+# user1-client로 midm-base 라우트 호출 (midm-allowed 그룹 필요)
+curl -X POST http://localhost:8000/midm-base/chat \
+  -H "apikey: user1-secret-key-12345" \
   -H "Content-Type: application/json" \
   -d '{
     "messages": [
@@ -89,15 +215,37 @@ curl -X POST http://localhost:8000/llama2/chat \
     ]
   }'
 
-# premium-client로 API 호출
-curl -X POST http://localhost:8000/llama2/chat \
-  -H "apikey: premium-secret-key-67890" \
+# admin-client로 gpt4o 라우트 호출 (openai-allowed 그룹 필요)
+curl -X POST http://localhost:8000/gpt4o/chat \
+  -H "apikey: admin-secret-key-67890" \
   -H "Content-Type: application/json" \
   -d '{
     "messages": [
       {"role": "user", "content": "안녕하세요"}
     ]
   }'
+ 
+# 메타데이터 조회 (route에 플러그인 추가 시)
+curl -sS -H "apikey: user1-secret-key-12345" \
+  http://localhost:8000/api/user-metadata | jq
+```
+
+예시 응답:
+
+```
+[
+  {
+    "id": "kt-midm-base",
+    "provider_name": "kt",
+    "tags": ["kt", "믿음"],
+    "tdl_matrix": { "T1": [0,0,0,0,0,3,0,0,0,0], ... },
+    "capabilities": [1,1,0,0,0],
+    "max_input_tokens": 50000,
+    "max_output_tokens": 20000,
+    "input_cost_per_token": 5e-08,
+    "output_cost_per_token": 2e-07
+  }
+]
 ```
 
 ### 2. 자동 추가되는 헤더
@@ -107,13 +255,13 @@ curl -X POST http://localhost:8000/llama2/chat \
 ```http
 X-User-TDL-Matrix: {"T1":[0,0,0,0,0,3,0,0,0,0],"T2":[0,0,0,0,0,3,0,0,0,0],...}
 X-User-Capabilities: [1,1,0,0,0]
-X-Consumer-ID: kt-llama3-1
-X-User-Max-Input-Tokens: 24000
-X-User-Max-Output-Tokens: 8000
-X-User-Input-Cost: 0.000000083
-X-User-Output-Cost: 0.00000033
+X-Consumer-ID: kt-midm-base
+X-User-Max-Input-Tokens: 50000
+X-User-Max-Output-Tokens: 20000
+X-User-Input-Cost: 0.00000005
+X-User-Output-Cost: 0.0000002
 X-User-Provider: kt
-X-User-Tags: ["뭘봐임마"]
+X-User-Tags: ["kt", "믿음"]
 ```
 
 ## 📁 플러그인 구조
@@ -133,19 +281,22 @@ user-metadata-plugin/
 └── README.md        # 이 파일
 ```
 
-## ⚙️ 설정 옵션
+## ⚙️ 설정 옵션 (metadata_list)
 
-| 옵션 | 타입 | 필수 | 설명 | 예시 |
-|------|------|------|------|------|
-| `id` | string | ✅ | 사용자 고유 ID | `"kt-llama3-1"` |
-| `provider_name` | string | ✅ | 제공업체 이름 | `"kt"` |
-| `tags` | array | ❌ | 사용자 태그 | `["뭘봐임마"]` |
-| `tdl_matrix` | object | ✅ | TDL 매트릭스 | `{"T1": [0,0,0,0,0,3,0,0,0,0]}` |
-| `capabilities` | array | ✅ | 기능 권한 | `[1,1,0,0,0]` |
-| `max_input_tokens` | number | ✅ | 최대 입력 토큰 | `24000` |
-| `max_output_tokens` | number | ✅ | 최대 출력 토큰 | `8000` |
-| `input_cost_per_token` | number | ✅ | 입력 토큰 비용 | `0.000000083` |
-| `output_cost_per_token` | number | ✅ | 출력 토큰 비용 | `0.00000033` |
+- 최상위 설정은 `metadata_list` 배열입니다. 각 원소는 아래 필드를 갖는 레코드입니다.
+
+| 옵션 | 타입 | 필수 | 설명 |
+|------|------|------|------|
+| `metadata_list` | array(record) | ✅ | 여러 메타데이터 묶음 |
+| `metadata_list[].id` | string | ✅ | 사용자/모델 메타데이터 ID |
+| `metadata_list[].provider_name` | string | ✅ | 제공업체 이름 |
+| `metadata_list[].tags` | array(string) | ❌ | 태그 목록 |
+| `metadata_list[].tdl_matrix.T1~T12` | array(number) | ✅ | 시간대별 매트릭스 벡터 |
+| `metadata_list[].capabilities` | array(number) | ✅ | 기능 권한 플래그 배열 |
+| `metadata_list[].max_input_tokens` | number | ✅ | 최대 입력 토큰 |
+| `metadata_list[].max_output_tokens` | number | ✅ | 최대 출력 토큰 |
+| `metadata_list[].input_cost_per_token` | number | ✅ | 입력 토큰 비용 |
+| `metadata_list[].output_cost_per_token` | number | ✅ | 출력 토큰 비용 |
 
 ## 🔄 TDL Matrix 구조
 
@@ -233,8 +384,8 @@ docker-compose logs kong | grep "user-metadata"
 
 ```bash
 # 요청 헤더 확인
-curl -v -X POST http://localhost:8000/llama2/chat \
-  -H "apikey: llama2-secret-key-12345" \
+curl -v -X POST http://localhost:8000/midm-base/chat \
+  -H "apikey: user1-secret-key-12345" \
   -H "Content-Type: application/json" \
   -d '{"messages": [{"role": "user", "content": "test"}]}'
 ```
